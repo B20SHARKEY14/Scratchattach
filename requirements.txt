@@ -1,0 +1,3 @@
+scratchattach
+python-dotenv
+rich
