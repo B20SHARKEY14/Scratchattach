@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61", "wheel", "build"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scratchattach-helper"
+version = "0.1.0"
+description = "Helper CLI and GUI demonstrating scratchattach usage"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [ { name = "B20SHARKEY14" } ]
+dependencies = ["scratchattach", "python-dotenv", "rich", "pywebview"]
+
+[project.scripts]
+scratchattach = "main:main"

@@ -61,6 +61,8 @@ def main():
 	parser.add_argument("--session-string", help="Scratch session string to use for authentication")
 	parser.add_argument("--browser-login", action="store_true", help="Open browser to login and retrieve session")
 	parser.add_argument("--json", action="store_true", help="Print raw JSON output instead of pretty text")
+	parser.add_argument("--format", choices=["json", "yaml", "csv", "rich", "pretty"], help="Output format (overrides --json). If not set, human-friendly output is used.")
+	parser.add_argument("--export", help="Write output to a file instead of printing (auto-chooses format by extension if not set)")
 	parser.add_argument("--debug", action="store_true", help="Enable debug output and warnings")
 	parser.add_argument("--forget-session", action="store_true", help="Forget saved session (~/.scratchattach_session) and exit")
 
@@ -271,6 +273,99 @@ def main():
 		except Exception as e:
 			print("Browser login failed:", e)
 
+	# Helper: serialize or write output according to requested format
+	def _write_output(obj, fmt=None, export_path=None):
+		# Determine format
+		fmt = fmt or ("json" if args.json else None)
+		if not fmt and export_path:
+			if export_path.endswith(".json"):
+				fmt = "json"
+			elif export_path.endswith(".yaml") or export_path.endswith(".yml"):
+				fmt = "yaml"
+			elif export_path.endswith(".csv"):
+				fmt = "csv"
+		# JSON
+		if fmt == "json":
+			out = json.dumps(obj, indent=2, default=str)
+			if export_path:
+				with open(export_path, "w", encoding="utf-8") as f:
+					f.write(out)
+				print(f"Wrote JSON to {export_path}")
+				return
+			print(out)
+			return
+		# YAML
+		if fmt == "yaml":
+			try:
+				import yaml
+			except Exception:
+				print("PyYAML not installed; install 'pyyaml' to use YAML output")
+				return
+			out = yaml.safe_dump(obj, sort_keys=False)
+			if export_path:
+				with open(export_path, "w", encoding="utf-8") as f:
+					f.write(out)
+				print(f"Wrote YAML to {export_path}")
+				return
+			print(out)
+			return
+		# CSV: simple heuristics
+		if fmt == "csv":
+			import csv
+			# If top-level is a list of dicts, write table
+			if isinstance(obj, list):
+				rows = []
+				headers = set()
+				for item in obj:
+					if isinstance(item, dict):
+						headers.update(item.keys())
+						rows.append(item)
+				headers = list(headers)
+				if export_path:
+					with open(export_path, "w", newline="", encoding="utf-8") as f:
+						w = csv.DictWriter(f, fieldnames=headers)
+						w.writeheader()
+						for r in rows:
+							w.writerow({k: v for k, v in r.items()})
+					print(f"Wrote CSV to {export_path}")
+					return
+				w = csv.DictWriter(sys.stdout, fieldnames=headers)
+				w.writeheader()
+				for r in rows:
+					w.writerow({k: v for k, v in r.items()})
+				return
+			# If dict, write key,value pairs
+			if isinstance(obj, dict):
+				if export_path:
+					with open(export_path, "w", newline="", encoding="utf-8") as f:
+						w = csv.writer(f)
+						w.writerow(["key", "value"])
+						for k, v in obj.items():
+							w.writerow([k, v])
+					print(f"Wrote CSV to {export_path}")
+					return
+				w = csv.writer(sys.stdout)
+				w.writerow(["key", "value"])
+				for k, v in obj.items():
+					w.writerow([k, v])
+				return
+			print("CSV output not available for this data structure")
+			return
+
+		# Rich/pretty
+		if fmt in ("rich", "pretty") or (fmt is None and not args.json):
+			if HAVE_RICH and fmt == "rich":
+				# Let existing rich output path handle it (fall-through)
+				pass
+			if export_path:
+				# Fallback to JSON export if exporting pretty text
+				with open(export_path, "w", encoding="utf-8") as f:
+					f.write(json.dumps(obj, indent=2, default=str))
+				print(f"Wrote JSON to {export_path} (pretty export requested)")
+				return
+			# No export and not JSON: let main pretty-print path handle it (return False)
+			return False
+
 	# Handle `projects` subcommand: list projects for the given user (best-effort)
 	if getattr(args, "command", None) == "projects":
 		if not username:
@@ -292,9 +387,10 @@ def main():
 				projs = None
 
 			limit = getattr(args, "limit", 20)
-			if args.json:
-				print(json.dumps({"username": username, "projects": projs}, default=str))
-			else:
+			out_obj = {"username": username, "projects": projs}
+			# honor requested format/export
+			if _write_output(out_obj, fmt=getattr(args, "format", None), export_path=getattr(args, "export", None)) is False:
+				# fallback to human output
 				if projs:
 					print(f"Projects for {username}:")
 					n = 0
@@ -341,9 +437,8 @@ def main():
 			except Exception:
 				msgs = None
 
-			if args.json:
-				print(json.dumps({"username": username, "message_count": msg_count, "messages": msgs}, default=str))
-			else:
+			out_obj = {"username": username, "message_count": msg_count, "messages": msgs}
+			if _write_output(out_obj, fmt=getattr(args, "format", None), export_path=getattr(args, "export", None)) is False:
 				print(f"Message count: {msg_count}")
 				if msgs:
 					print("Messages (first 20):")
@@ -396,9 +491,9 @@ def main():
 			data = fetch_user_data(username)
 
 		# Output: either raw JSON or pretty human-readable (with optional rich colors)
-		if args.json:
-			print(json.dumps(data, indent=2))
-		else:
+		# Try serialization helper first
+		if _write_output(data, fmt=getattr(args, "format", None), export_path=getattr(args, "export", None)) is False:
+			# helper chose not to serialize; fall back to pretty printing
 			if HAVE_RICH:
 				c = _console
 				c.rule("Scratch user info")

@@ -1,3 +1,5 @@
 scratchattach
 python-dotenv
 rich
+pywebview
+

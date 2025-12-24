@@ -7,6 +7,8 @@ REQ := requirements.txt
 
 .PHONY: help install-local venv install-venv run test clean clean-local forget-session create-pth setup-env logout win-build mac-build
 .PHONY: install-deps-ubuntu install-deps-mint install-deps-kali install-deps-alpine install-deps-arch install-deps-fedora
+.PHONY: run-gui build-gui
+.PHONY: build-wheel build-sdist publish build-docker docker-run
 .PHONY: help install-local venv install-venv run test clean clean-local forget-session create-pth setup-env run-setup logout win-build mac-build
 
 help:
@@ -106,6 +108,42 @@ mac-build:
 	@echo "== Building macOS .app and DMG (py2app flow) =="
 	@chmod +x installer/macos/build-app-and-dmg.sh || true
 	@./installer/macos/build-app-and-dmg.sh "$(CURDIR)" "$(CURDIR)/dist"
+run-gui:
+	@echo
+	@echo "== Running GUI (pywebview) =="
+	@python3 gui.py
+
+build-gui:
+	@echo
+	@echo "== Build GUI (using pyinstaller) - requires pyinstaller installed =="
+	@python3 -m pyinstaller --onefile --windowed gui.py || true
+
+build-wheel:
+	@echo
+	@echo "== Building wheel and sdist into dist/ (requires 'build' package) =="
+	@python3 -m build --outdir dist || true
+
+build-sdist:
+	@echo
+	@echo "== Building source distribution into dist/ =="
+	@python3 -m build --sdist --outdir dist || true
+
+publish:
+	@echo
+	@echo "== Publish to PyPI (dry-run) =="
+	@echo "To publish, install 'twine' and run:"
+	@echo "  python3 -m pip install twine"
+	@echo "  python3 -m twine upload dist/*"
+
+build-docker:
+	@echo
+	@echo "== Building Docker image 'scratchattach-helper:latest' =="
+	@docker build -t scratchattach-helper:latest .
+
+docker-run:
+	@echo
+	@echo "== Run scratchattach inside Docker image =="
+	@docker run --rm scratchattach-helper:latest fetch griffpatch
 
 # Linux distro helpers: attempt to install common build/runtime deps via each distro's package manager.
 # These targets will run package-manager commands and require sudo/root.

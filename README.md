@@ -170,6 +170,50 @@ make run ARGS="messages griffpatch --session-string \"$SCRATCH_SESSION_STRING\""
 
 If no subcommand is given, the previous positional-style usage is still supported for backward compatibility.
 
+Output formats and export
+------------------------
+
+The CLI supports multiple output formats via `--format` (or `--json`) and can write output
+to a file with `--export <path>`. If `--format` is not set, `--export` will infer format from
+the output filename extension (`.json`, `.yaml`, `.yml`, `.csv`). Available formats:
+
+- `json` — JSON serialization (always available).
+- `yaml` — YAML serialization (requires `pyyaml` package).
+- `csv` — CSV export (best-effort for lists/dicts).
+- `rich` / `pretty` — human-friendly terminal output using `rich` when installed.
+
+Examples:
+
+```bash
+# Print JSON to stdout
+./run.sh fetch griffpatch --format json
+
+# Write YAML to a file (requires pyyaml)
+./run.sh fetch griffpatch --format yaml --export out.yaml
+
+# Export projects to CSV
+./run.sh projects griffpatch --format csv --export projects.csv
+
+# Pretty terminal output (default)
+./run.sh fetch griffpatch
+```
+
+GUI
+---
+
+A minimal GUI is available using `pywebview`. To run it (after installing dependencies):
+
+```bash
+make run-gui
+```
+
+To create a single-file executable (optional) you can use `pyinstaller`:
+
+```bash
+make build-gui
+```
+
+
 - To login or run with authentication, prefer Makefile usage (examples):
 
 ```bash
@@ -373,3 +417,29 @@ Signing and notarization
 	end-user systems. For distribution you should sign the `.app` and then notarize with Apple.
 	This requires an Apple Developer account and access to signing keys. CI can be extended to
 	perform signing and notarization using `altool`/`notarytool` with secrets stored in GitHub.
+
+Packaging & Docker
+------------------
+
+This repository includes a `pyproject.toml` so you can build a wheel and sdist locally. Use the
+Makefile helpers to build artifacts and a Docker image:
+
+```bash
+# Build wheel/sdist into dist/
+make build-wheel
+
+# Build Docker image and run a quick command inside it
+make build-docker
+make docker-run
+```
+
+To publish to PyPI use `twine` after building:
+
+```bash
+python3 -m pip install --upgrade twine
+python3 -m twine upload dist/*
+```
+
+The provided `Dockerfile` uses `python:3.12-slim`, installs runtime dependencies from
+`requirements.txt`, and installs the package so the `scratchattach` console command is
+available inside the container.
