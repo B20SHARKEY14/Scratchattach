@@ -5,8 +5,9 @@ PIP ?= $(PYTHON) -m pip
 LOCAL_PACKAGES := .local-packages
 REQ := requirements.txt
 
-.PHONY: help install-local venv install-venv run test clean clean-local forget-session create-pth setup-env logout
-.PHONY: help install-local venv install-venv run test clean clean-local forget-session create-pth setup-env run-setup logout
+.PHONY: help install-local venv install-venv run test clean clean-local forget-session create-pth setup-env logout win-build mac-build
+.PHONY: install-deps-ubuntu install-deps-mint install-deps-kali install-deps-alpine install-deps-arch install-deps-fedora
+.PHONY: help install-local venv install-venv run test clean clean-local forget-session create-pth setup-env run-setup logout win-build mac-build
 
 help:
 	@echo "== Scratchattach Makefile =="
@@ -21,6 +22,14 @@ help:
 	@echo "  clean-local     - removes $(LOCAL_PACKAGES) and saved session (use with care)"
 	@echo "  setup-env       - interactive .env creation/update (run.setup.sh)"
 	@echo "  logout          - remove saved session and clear session env"
+	@echo "  win-build       - build MSI using installer/build-msi.ps1 (Windows)"
+	@echo "  mac-build       - build macOS .app + DMG using py2app flow"
+	@echo "  install-deps-ubuntu - install common OS deps on Ubuntu/Debian-based systems"
+	@echo "  install-deps-mint   - install common OS deps on Linux Mint (alias of ubuntu)"
+	@echo "  install-deps-kali   - install common OS deps on Kali (alias of ubuntu)"
+	@echo "  install-deps-alpine - install common OS deps on Alpine Linux"
+	@echo "  install-deps-arch   - install common OS deps on Arch Linux"
+	@echo "  install-deps-fedora - install common OS deps on Fedora/RHEL-based systems"
 
 install-local: $(REQ)
 	@echo
@@ -86,3 +95,42 @@ logout:
 	@echo
 	@echo "== Removing saved session and clearing .env session string =="
 	./run-logout.sh
+
+win-build:
+	@echo
+	@echo "== Building MSI (Windows) using installer/build-msi.ps1 =="
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "& './installer/build-msi.ps1' -ProjectDir '$(CURDIR)' -Output 'dist'"
+
+mac-build:
+	@echo
+	@echo "== Building macOS .app and DMG (py2app flow) =="
+	@chmod +x installer/macos/build-app-and-dmg.sh || true
+	@./installer/macos/build-app-and-dmg.sh "$(CURDIR)" "$(CURDIR)/dist"
+
+# Linux distro helpers: attempt to install common build/runtime deps via each distro's package manager.
+# These targets will run package-manager commands and require sudo/root.
+SUDO ?= sudo
+
+install-deps-ubuntu:
+	@echo
+	@echo "== Installing dependencies on Ubuntu/Debian (python3, venv, pip, build tools) =="
+	@$(SUDO) apt-get update && $(SUDO) apt-get install -y python3 python3-venv python3-pip build-essential libffi-dev libssl-dev
+
+install-deps-mint: install-deps-ubuntu
+
+install-deps-kali: install-deps-ubuntu
+
+install-deps-alpine:
+	@echo
+	@echo "== Installing dependencies on Alpine Linux (python3, pip, build-base) =="
+	@$(SUDO) apk update && $(SUDO) apk add --no-cache python3 py3-pip build-base libffi-dev openssl-dev
+
+install-deps-arch:
+	@echo
+	@echo "== Installing dependencies on Arch Linux (python, pip, base-devel) =="
+	@$(SUDO) pacman -Syu --noconfirm python python-pip base-devel openssl libffi
+
+install-deps-fedora:
+	@echo
+	@echo "== Installing dependencies on Fedora (python3, pip, build tools) =="
+	@$(SUDO) dnf install -y python3 python3-pip python3-virtualenv gcc make openssl-devel libffi-devel

@@ -1,0 +1,25 @@
+name: Build macOS DMG
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build .app and DMG with py2app
+        run: |
+          chmod +x installer/macos/build-app-and-dmg.sh
+          ./installer/macos/build-app-and-dmg.sh "$PWD" "$PWD/dist"
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: scratchattach-dmg
+          path: dist/Scratchattach.dmg

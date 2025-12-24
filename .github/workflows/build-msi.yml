@@ -1,0 +1,29 @@
+name: Build MSI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-msi:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure Chocolatey and install WiX
+        run: |
+          choco install wixtoolset -y
+
+      - name: Build MSI
+        shell: powershell
+        run: |
+          .\installer\build-msi.ps1 -ProjectDir $PWD -Output $PWD\dist
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scratchattach-msi
+          path: dist/Scratchattach.msi

@@ -1,0 +1,14 @@
+# Example ~/.scratchattach/config.toml
+
+[default]
+username = "griffpatch"
+# session_string = "SESSION_STRING_HERE"
+# login_username = "you"
+# login_password = "secret"
+
+[work]
+username = "yourworkuser"
+session_string = ""
+
+# Add profiles for different environments and use via --profile work or
+# SCRATCH_PROFILE=work

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="Scratchattach" Language="1033" Version="0.1.0" Manufacturer="B20SHARKEY14" UpgradeCode="5f3b2a9e-4c1d-4b6e-9a2f-1d2c3b4a5e6f">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+
+    <MediaTemplate />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="Scratchattach" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ProgramMenuDir" Name="Scratchattach" />
+      </Directory>
+    </Directory>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <!-- Files installed from repository root -->
+      <Component Id="cmp_main_py" Guid="c1e2f3a4-b5c6-47d8-9e0f-1a2b3c4d5e6f">
+        <File Id="file_main_py" Source="$(var.ProjectDir)\main.py" KeyPath="yes" />
+      </Component>
+      <Component Id="cmp_run_sh" Guid="d2f3a4b5-c6d7-48e9-0f1a-2b3c4d5e6f7a">
+        <File Id="file_run_sh" Source="$(var.ProjectDir)\run.sh" />
+      </Component>
+      <Component Id="cmp_setup_sh" Guid="e3a4b5c6-d7e8-49f0-1a2b-3c4d5e6f7a8b">
+        <File Id="file_setup_sh" Source="$(var.ProjectDir)\run.setup.sh" />
+      </Component>
+      <Component Id="cmp_logout_sh" Guid="f4b5c6d7-e8f9-40a1-2b3c-4d5e6f7a8b9c">
+        <File Id="file_logout_sh" Source="$(var.ProjectDir)\run-logout.sh" />
+      </Component>
+      <Component Id="cmp_readme" Guid="a5c6d7e8-f9a0-41b2-3c4d-5e6f7a8b9c0d">
+        <File Id="file_readme" Source="$(var.ProjectDir)\README.md" />
+      </Component>
+      <Component Id="cmp_requirements" Guid="b6d7e8f9-a0b1-42c3-4d5e-6f7a8b9c0d1e">
+        <File Id="file_requirements" Source="$(var.ProjectDir)\requirements.txt" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="DefaultFeature" Title="Scratchattach" Level="1">
+      <ComponentRef Id="cmp_main_py" />
+      <ComponentRef Id="cmp_run_sh" />
+      <ComponentRef Id="cmp_setup_sh" />
+      <ComponentRef Id="cmp_logout_sh" />
+      <ComponentRef Id="cmp_readme" />
+      <ComponentRef Id="cmp_requirements" />
+    </Feature>
+
+    <Property Id="ProjectDir" Value="." />
+  </Product>
+</Wix>
